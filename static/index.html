@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Australian Horse Racing Betting Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1 class="logo">🏇 Racing Dashboard</h1>
+                    <p class="tagline">Live Australian Horse Racing Odds</p>
+                </div>
+                <div class="header-info">
+                    <div class="timestamp">
+                        <span class="label">Last Update:</span>
+                        <span class="time" id="lastUpdate">--:--:--</span>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot live"></span>
+                        <span class="status-text">Live</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Sidebar with Market Movers -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h2 class="sidebar-title">📊 Market Movers</h2>
+                    <div class="movers-container" id="moversContainer">
+                        <div class="loading-spinner">Loading movers...</div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h2 class="sidebar-title">💡 Expert Tips</h2>
+                    <div class="predictions-container" id="predictionsContainer">
+                        <div class="loading-spinner">Loading predictions...</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Race Cards Section -->
+            <section class="races-section">
+                <div class="section-header">
+                    <h2>Today's Races</h2>
+                    <div class="filter-controls">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="featured">Featured</button>
+                        <button class="filter-btn" data-filter="randwick">Randwick</button>
+                        <button class="filter-btn" data-filter="moonee-valley">Moonee Valley</button>
+                        <button class="filter-btn" data-filter="flemington">Flemington</button>
+                        <button class="filter-btn" data-filter="caulfield">Caulfield</button>
+                    </div>
+                </div>
+
+                <div class="races-grid" id="racesGrid">
+                    <div class="loading-spinner">Loading races...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Race Card Template (hidden) -->
+    <template id="raceCardTemplate">
+        <div class="race-card">
+            <div class="card-header">
+                <div class="race-info">
+                    <h3 class="race-name"></h3>
+                    <span class="track-badge"></span>
+                </div>
+                <div class="featured-badge" style="display: none;">⭐ Featured</div>
+            </div>
+
+            <div class="card-body">
+                <div class="horses-container">
+                    <div class="horse-matchup">
+                        <div class="horse-card horse-1">
+                            <div class="horse-name"></div>
+                            <div class="odds-display">
+                                <span class="odds-label">Win Odds</span>
+                                <span class="odds-value"></span>
+                            </div>
+                            <div class="place-odds">
+                                <span class="place-label">Place</span>
+                                <span class="place-value"></span>
+                            </div>
+                        </div>
+
+                        <div class="vs-divider">VS</div>
+
+                        <div class="horse-card horse-2">
+                            <div class="horse-name"></div>
+                            <div class="odds-display">
+                                <span class="odds-label">Win Odds</span>
+                                <span class="odds-value"></span>
+                            </div>
+                            <div class="place-odds">
+                                <span class="place-label">Place</span>
+                                <span class="place-value"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trend-section">
+                    <div class="trend-indicator">
+                        <span class="trend-icon"></span>
+                        <span class="trend-label">Trend</span>
+                        <span class="trend-value"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <button class="bet-btn">Place Bet</button>
+                <button class="details-btn">More Details</button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Mover Card Template (hidden) -->
+    <template id="moverCardTemplate">
+        <div class="mover-card">
+            <div class="mover-rank"></div>
+            <div class="mover-info">
+                <div class="mover-horse"></div>
+                <div class="mover-track"></div>
+            </div>
+            <div class="mover-change">
+                <span class="change-value"></span>
+                <span class="change-icon"></span>
+            </div>
+            <div class="mover-odds"></div>
+        </div>
+    </template>
+
+    <!-- Prediction Card Template (hidden) -->
+    <template id="predictionCardTemplate">
+        <div class="prediction-card">
+            <div class="prediction-header">
+                <div class="prediction-tip"></div>
+                <div class="confidence-badge"></div>
+            </div>
+            <div class="prediction-track"></div>
+            <div class="prediction-reason"></div>
+        </div>
+    </template>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
