@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Australian Horse Racing Betting Dashboard</title>
+    <title>Australian Horse Racing Betting Dashboard - AI Powered</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
             <div class="header-content">
                 <div class="logo-section">
                     <h1 class="logo">🏇 Racing Dashboard</h1>
-                    <p class="tagline">Live Australian Horse Racing Odds</p>
+                    <p class="tagline">Live Australian Horse Racing Odds - AI Powered</p>
                 </div>
                 <div class="header-info">
                     <div class="timestamp">
@@ -24,6 +24,7 @@
                         <span class="status-dot live"></span>
                         <span class="status-text">Live</span>
                     </div>
+                    <button id="aiChatToggle" class="ai-toggle-btn" title="Open AI Chat">🤖 AI</button>
                 </div>
             </div>
         </header>
@@ -66,6 +67,23 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- AI Chat Panel -->
+    <div id="aiChatPanel" class="ai-chat-panel hidden">
+        <div class="ai-chat-header">
+            <h3>🤖 AI Racing Assistant</h3>
+            <button id="aiChatClose" class="ai-close-btn">&times;</button>
+        </div>
+        <div class="ai-chat-messages" id="aiChatMessages">
+            <div class="ai-message">
+                <p>👋 Hello! I'm your AI racing assistant. Ask me anything about horse racing, betting strategies, or race analysis!</p>
+            </div>
+        </div>
+        <div class="ai-chat-input-area">
+            <input type="text" id="aiChatInput" placeholder="Ask about races, horses, or betting..." class="ai-chat-input">
+            <button id="aiChatSend" class="ai-send-btn">Send</button>
+        </div>
     </div>
 
     <!-- Race Card Template (hidden) -->
@@ -135,6 +153,7 @@
 
             <div class="card-footer">
                 <button class="bet-btn">Place Bet</button>
+                <button class="ai-predict-btn">🤖 AI Predict</button>
                 <button class="details-btn">More Details</button>
             </div>
         </div>

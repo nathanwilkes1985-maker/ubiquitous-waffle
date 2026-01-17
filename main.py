@@ -1,19 +1,23 @@
 """
-Australian Horse Racing Betting Dashboard - FastAPI Backend v2.0
-Enhanced with real data integration, advanced features, and improved API structure
+Australian Horse Racing Betting Dashboard - FastAPI Backend v3.0
+Enhanced with AI-powered predictions, analysis, and intelligent recommendations
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from datetime import datetime
 import json
+import os
+from openai import OpenAI
 
-app = FastAPI(title="Horse Racing Dashboard API", version="2.0.0")
+app = FastAPI(title="Horse Racing Dashboard API", version="3.0.0")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Initialize OpenAI client
+client = OpenAI()
 
 # Enhanced sample data with detailed horse information
 SAMPLE_RACES = [
@@ -346,6 +350,113 @@ PREDICTIONS = [
 ]
 
 
+# ========================================
+# AI Functions
+# ========================================
+
+def generate_ai_prediction(race_data: dict) -> dict:
+    """Generate AI-powered prediction for a race using OpenAI"""
+    try:
+        # Format race data for AI analysis
+        horses_info = "\n".join([
+            f"- {h['name']}: Odds {h['odds']}, Jockey: {h['jockey']}, Trainer: {h['trainer']}, Form: {h['form']}, Trend: {h['trend']}"
+            for h in race_data.get('horses', [])[:4]
+        ])
+        
+        prompt = f"""Analyze this horse racing race and provide a brief, confident prediction:
+
+Race: {race_data.get('race', 'Unknown')}
+Track: {race_data.get('track', 'Unknown')}
+Distance: {race_data.get('distance', 'Unknown')}
+Class: {race_data.get('class', 'Unknown')}
+Going: {race_data.get('going', 'Unknown')}
+
+Horses:
+{horses_info}
+
+Provide:
+1. Top 2 horse predictions (horse name and confidence %)
+2. Brief analysis (1-2 sentences)
+3. Recommended bet type (WIN/PLACE/EACH WAY)
+
+Format as JSON with keys: top_pick, second_pick, confidence, analysis, bet_type"""
+
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert horse racing analyst. Provide confident, data-driven predictions based on form, odds, and track conditions."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.7,
+            max_tokens=300
+        )
+        
+        # Parse AI response
+        ai_response = response.choices[0].message.content
+        
+        # Try to extract JSON from response
+        try:
+            import re
+            json_match = re.search(r'\{.*\}', ai_response, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group())
+        except:
+            pass
+        
+        return {
+            "analysis": ai_response,
+            "confidence": 75,
+            "model": "gpt-4.1-mini"
+        }
+    except Exception as e:
+        print(f"Error generating AI prediction: {e}")
+        return {
+            "error": str(e),
+            "analysis": "AI analysis temporarily unavailable"
+        }
+
+
+def generate_ai_insights(query: str) -> dict:
+    """Generate AI insights for user queries about horse racing"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert Australian horse racing analyst and betting advisor. Provide helpful, accurate insights about horse racing, betting strategies, and race analysis."
+                },
+                {
+                    "role": "user",
+                    "content": query
+                }
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
+        
+        return {
+            "response": response.choices[0].message.content,
+            "model": "gpt-4.1-mini"
+        }
+    except Exception as e:
+        print(f"Error generating AI insights: {e}")
+        return {
+            "error": str(e),
+            "response": "AI insights temporarily unavailable"
+        }
+
+
+# ========================================
+# API Endpoints
+# ========================================
+
 @app.get("/")
 async def serve_index():
     """Serve the main dashboard HTML"""
@@ -354,24 +465,18 @@ async def serve_index():
 
 @app.get("/api/odds")
 async def get_odds():
-    """
-    Get current racing odds and events with detailed horse information
-    Returns enhanced data with jockey, trainer, form, and trend information
-    """
+    """Get current racing odds and events with detailed horse information"""
     return {
         "events": SAMPLE_RACES,
         "timestamp": datetime.now().isoformat(),
         "status": "live",
-        "version": "2.0"
+        "version": "3.0"
     }
 
 
 @app.get("/api/market-movers")
 async def get_market_movers():
-    """
-    Get top market movers - horses with significant odds changes
-    Includes volume and direction indicators for market sentiment analysis
-    """
+    """Get top market movers - horses with significant odds changes"""
     return {
         "movers": MARKET_MOVERS,
         "timestamp": datetime.now().isoformat(),
@@ -381,14 +486,42 @@ async def get_market_movers():
 
 @app.get("/api/predictions")
 async def get_predictions():
-    """
-    Get expert predictions and tips for upcoming races
-    Includes confidence levels, analysis, and betting recommendations
-    """
+    """Get expert predictions and tips for upcoming races"""
     return {
         "predictions": PREDICTIONS,
         "timestamp": datetime.now().isoformat(),
         "total": len(PREDICTIONS)
+    }
+
+
+@app.get("/api/ai-prediction/{race_id}")
+async def get_ai_prediction(race_id: str):
+    """Get AI-powered prediction for a specific race"""
+    race = next((r for r in SAMPLE_RACES if r['id'] == race_id), None)
+    if not race:
+        raise HTTPException(status_code=404, detail="Race not found")
+    
+    prediction = generate_ai_prediction(race)
+    return {
+        "race_id": race_id,
+        "race": race['race'],
+        "ai_prediction": prediction,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.post("/api/ai-insights")
+async def get_ai_insights(request: dict):
+    """Get AI insights for user queries"""
+    query = request.get("query", "")
+    if not query:
+        raise HTTPException(status_code=400, detail="Query is required")
+    
+    insights = generate_ai_insights(query)
+    return {
+        "query": query,
+        "insights": insights,
+        "timestamp": datetime.now().isoformat()
     }
 
 
@@ -412,7 +545,8 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "service": "Horse Racing Dashboard API",
-        "version": "2.0"
+        "version": "3.0",
+        "ai_enabled": True
     }
 
 

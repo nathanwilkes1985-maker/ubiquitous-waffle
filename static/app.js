@@ -1,6 +1,6 @@
 /**
- * Australian Horse Racing Betting Dashboard - Frontend v2.0
- * Real-time odds, market movers, and predictions with enhanced features
+ * Australian Horse Racing Betting Dashboard - Frontend v3.0
+ * AI-powered predictions, chat interface, and real-time odds
  */
 
 // ========================================
@@ -23,6 +23,7 @@ const state = {
     predictions: [],
     currentFilter: 'all',
     lastUpdate: null,
+    aiChatOpen: false,
 };
 
 // ========================================
@@ -38,6 +39,12 @@ const elements = {
     raceCardTemplate: document.getElementById('raceCardTemplate'),
     moverCardTemplate: document.getElementById('moverCardTemplate'),
     predictionCardTemplate: document.getElementById('predictionCardTemplate'),
+    aiChatToggle: document.getElementById('aiChatToggle'),
+    aiChatPanel: document.getElementById('aiChatPanel'),
+    aiChatClose: document.getElementById('aiChatClose'),
+    aiChatMessages: document.getElementById('aiChatMessages'),
+    aiChatInput: document.getElementById('aiChatInput'),
+    aiChatSend: document.getElementById('aiChatSend'),
 };
 
 // ========================================
@@ -90,6 +97,40 @@ async function fetchPredictions() {
     } catch (error) {
         console.error('Error fetching predictions:', error);
         return [];
+    }
+}
+
+/**
+ * Get AI prediction for a specific race
+ */
+async function getAIPrediction(raceId) {
+    try {
+        const response = await fetch(`${CONFIG.API_BASE}/ai-prediction/${raceId}`);
+        if (!response.ok) throw new Error('Failed to get AI prediction');
+        const data = await response.json();
+        return data.ai_prediction;
+    } catch (error) {
+        console.error('Error getting AI prediction:', error);
+        return { error: 'Failed to get AI prediction' };
+    }
+}
+
+/**
+ * Get AI insights for user query
+ */
+async function getAIInsights(query) {
+    try {
+        const response = await fetch(`${CONFIG.API_BASE}/ai-insights`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        });
+        if (!response.ok) throw new Error('Failed to get AI insights');
+        const data = await response.json();
+        return data.insights;
+    } catch (error) {
+        console.error('Error getting AI insights:', error);
+        return { error: 'Failed to get AI insights' };
     }
 }
 
@@ -173,6 +214,10 @@ function createRaceCard(race) {
     // Event listeners
     template.querySelector('.bet-btn').addEventListener('click', () => {
         showBetSlip(race, horses[0]);
+    });
+
+    template.querySelector('.ai-predict-btn').addEventListener('click', () => {
+        showAIPrediction(race);
     });
 
     template.querySelector('.details-btn').addEventListener('click', () => {
@@ -306,6 +351,19 @@ function showBetSlip(race, horse) {
 }
 
 /**
+ * Show AI prediction for a race
+ */
+async function showAIPrediction(race) {
+    const prediction = await getAIPrediction(race.id);
+    if (prediction.error) {
+        alert('Could not get AI prediction. Please try again.');
+    } else {
+        const analysis = prediction.analysis || 'AI analysis not available';
+        alert(`AI Prediction for ${race.race}:\n\n${analysis}`);
+    }
+}
+
+/**
  * Show race details modal
  */
 function showRaceDetails(race) {
@@ -321,6 +379,70 @@ Runners:
 ${race.horses.map(h => `- ${h.name} (${h.odds.toFixed(2)})`).join('\n')}
     `;
     alert(details);
+}
+
+// ========================================
+// AI Chat Functions
+// ========================================
+
+/**
+ * Toggle AI chat panel
+ */
+function toggleAIChat() {
+    state.aiChatOpen = !state.aiChatOpen;
+    if (state.aiChatOpen) {
+        elements.aiChatPanel.classList.remove('hidden');
+        elements.aiChatInput.focus();
+    } else {
+        elements.aiChatPanel.classList.add('hidden');
+    }
+}
+
+/**
+ * Add message to chat
+ */
+function addChatMessage(text, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = isUser ? 'user-message' : 'ai-message';
+    
+    const p = document.createElement('p');
+    p.textContent = text;
+    messageDiv.appendChild(p);
+    
+    elements.aiChatMessages.appendChild(messageDiv);
+    elements.aiChatMessages.scrollTop = elements.aiChatMessages.scrollHeight;
+}
+
+/**
+ * Handle AI chat message
+ */
+async function handleAIChatMessage() {
+    const query = elements.aiChatInput.value.trim();
+    if (!query) return;
+    
+    // Add user message
+    addChatMessage(query, true);
+    elements.aiChatInput.value = '';
+    
+    // Get AI response
+    const insights = await getAIInsights(query);
+    if (insights.error) {
+        addChatMessage('Sorry, I encountered an error. Please try again.');
+    } else {
+        addChatMessage(insights.response || 'No response available');
+    }
+}
+
+/**
+ * Setup AI chat event listeners
+ */
+function setupAIChat() {
+    elements.aiChatToggle.addEventListener('click', toggleAIChat);
+    elements.aiChatClose.addEventListener('click', toggleAIChat);
+    elements.aiChatSend.addEventListener('click', handleAIChatMessage);
+    elements.aiChatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleAIChatMessage();
+    });
 }
 
 // ========================================
@@ -367,6 +489,7 @@ function setupAutoRefresh() {
  */
 function init() {
     setupFilterButtons();
+    setupAIChat();
     setupAutoRefresh();
 }
 
