@@ -31,7 +31,7 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Sidebar with Market Movers -->
+            <!-- Sidebar with Market Movers and Roughies -->
             <aside class="sidebar">
                 <div class="sidebar-section">
                     <h2 class="sidebar-title">📊 Market Movers</h2>
@@ -46,6 +46,14 @@
                         <div class="loading-spinner">Loading predictions...</div>
                     </div>
                 </div>
+
+                <div class="sidebar-section">
+                    <h2 class="sidebar-title">🎯 Roughies Tips</h2>
+                    <p class="roughies-subtitle">Outsider Picks with Value Odds</p>
+                    <div class="roughies-container" id="roughiesContainer">
+                        <div class="loading-spinner">Loading roughies...</div>
+                    </div>
+                </div>
             </aside>
 
             <!-- Main Race Cards Section -->
@@ -55,10 +63,21 @@
                     <div class="filter-controls">
                         <button class="filter-btn active" data-filter="all">All</button>
                         <button class="filter-btn" data-filter="featured">Featured</button>
+                        <!-- NSW Tracks -->
                         <button class="filter-btn" data-filter="randwick">Randwick</button>
+                        <button class="filter-btn" data-filter="rosehill">Rosehill</button>
+                        <button class="filter-btn" data-filter="canterbury">Canterbury</button>
+                        <!-- VIC Tracks -->
                         <button class="filter-btn" data-filter="moonee-valley">Moonee Valley</button>
                         <button class="filter-btn" data-filter="flemington">Flemington</button>
                         <button class="filter-btn" data-filter="caulfield">Caulfield</button>
+                        <!-- QLD Tracks -->
+                        <button class="filter-btn" data-filter="eagle-farm">Eagle Farm</button>
+                        <button class="filter-btn" data-filter="doomben">Doomben</button>
+                        <!-- WA Tracks -->
+                        <button class="filter-btn" data-filter="ascot">Ascot</button>
+                        <!-- SA Tracks -->
+                        <button class="filter-btn" data-filter="morphettville">Morphettville</button>
                     </div>
                 </div>
 
@@ -184,6 +203,22 @@
             </div>
             <div class="prediction-track"></div>
             <div class="prediction-reason"></div>
+        </div>
+    </template>
+
+    <!-- Roughies Card Template (hidden) -->
+    <template id="roughiesCardTemplate">
+        <div class="roughies-card">
+            <div class="roughies-header">
+                <div class="roughies-rank"></div>
+                <div class="roughies-horse"></div>
+            </div>
+            <div class="roughies-info">
+                <div class="roughies-track"></div>
+                <div class="roughies-odds"></div>
+            </div>
+            <div class="roughies-confidence"></div>
+            <div class="roughies-reason"></div>
         </div>
     </template>
 

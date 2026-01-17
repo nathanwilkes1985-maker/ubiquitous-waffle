@@ -1,6 +1,6 @@
 /**
- * Australian Horse Racing Betting Dashboard - Frontend v3.0
- * AI-powered predictions, chat interface, and real-time odds
+ * Australian Horse Racing Betting Dashboard - Frontend v4.0
+ * AI-powered predictions, chat interface, roughies tips, and all Australian tracks
  */
 
 // ========================================
@@ -21,6 +21,7 @@ const state = {
     races: [],
     movers: [],
     predictions: [],
+    roughies: [],
     currentFilter: 'all',
     lastUpdate: null,
     aiChatOpen: false,
@@ -34,11 +35,13 @@ const elements = {
     racesGrid: document.getElementById('racesGrid'),
     moversContainer: document.getElementById('moversContainer'),
     predictionsContainer: document.getElementById('predictionsContainer'),
+    roughiesContainer: document.getElementById('roughiesContainer'),
     lastUpdate: document.getElementById('lastUpdate'),
     filterButtons: document.querySelectorAll('.filter-btn'),
     raceCardTemplate: document.getElementById('raceCardTemplate'),
     moverCardTemplate: document.getElementById('moverCardTemplate'),
     predictionCardTemplate: document.getElementById('predictionCardTemplate'),
+    roughiesCardTemplate: document.getElementById('roughiesCardTemplate'),
     aiChatToggle: document.getElementById('aiChatToggle'),
     aiChatPanel: document.getElementById('aiChatPanel'),
     aiChatClose: document.getElementById('aiChatClose'),
@@ -96,6 +99,22 @@ async function fetchPredictions() {
         return state.predictions;
     } catch (error) {
         console.error('Error fetching predictions:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch roughies tips from backend
+ */
+async function fetchRoughies() {
+    try {
+        const response = await fetch(`${CONFIG.API_BASE}/roughies`);
+        if (!response.ok) throw new Error('Failed to fetch roughies');
+        const data = await response.json();
+        state.roughies = data.roughies || [];
+        return state.roughies;
+    } catch (error) {
+        console.error('Error fetching roughies:', error);
         return [];
     }
 }
@@ -298,6 +317,39 @@ function createPredictionCard(prediction) {
     return template.querySelector('.prediction-card');
 }
 
+/**
+ * Render roughies tips
+ */
+function renderRoughies() {
+    if (state.roughies.length === 0) {
+        elements.roughiesContainer.innerHTML = '<div class="loading-spinner">No roughies</div>';
+        return;
+    }
+
+    elements.roughiesContainer.innerHTML = '';
+    
+    state.roughies.forEach(roughie => {
+        const card = createRoughiesCard(roughie);
+        elements.roughiesContainer.appendChild(card);
+    });
+}
+
+/**
+ * Create a roughies card
+ */
+function createRoughiesCard(roughie) {
+    const template = elements.roughiesCardTemplate.content.cloneNode(true);
+    
+    template.querySelector('.roughies-rank').textContent = `#${roughie.rank}`;
+    template.querySelector('.roughies-horse').textContent = roughie.horse;
+    template.querySelector('.roughies-track').textContent = roughie.track;
+    template.querySelector('.roughies-odds').textContent = roughie.odds.toFixed(2);
+    template.querySelector('.roughies-confidence').textContent = `${roughie.confidence}% Confidence`;
+    template.querySelector('.roughies-reason').textContent = roughie.analysis;
+    
+    return template.querySelector('.roughies-card');
+}
+
 // ========================================
 // Filter Functions
 // ========================================
@@ -309,8 +361,9 @@ function filterRaces(races, filter) {
     if (filter === 'all') return races;
     if (filter === 'featured') return races.filter(r => r.featured);
     
-    // Filter by track (case-insensitive)
-    return races.filter(r => r.track.toLowerCase() === filter.toLowerCase());
+    // Filter by track (case-insensitive, handle hyphenated names)
+    const trackName = filter.replace('-', ' ').toLowerCase();
+    return races.filter(r => r.track.toLowerCase() === trackName);
 }
 
 /**
@@ -457,12 +510,14 @@ async function refreshData() {
         await Promise.all([
             fetchOdds(),
             fetchMarketMovers(),
-            fetchPredictions()
+            fetchPredictions(),
+            fetchRoughies()
         ]);
         
         renderRaces();
         renderMarketMovers();
         renderPredictions();
+        renderRoughies();
         updateTimestamp();
     } catch (error) {
         console.error('Error refreshing data:', error);
