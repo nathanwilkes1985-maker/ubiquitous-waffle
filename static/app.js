@@ -1,6 +1,6 @@
 /**
- * Australian Horse Racing Betting Dashboard - Frontend
- * Real-time odds, market movers, and predictions
+ * Australian Horse Racing Betting Dashboard - Frontend v2.0
+ * Real-time odds, market movers, and predictions with enhanced features
  */
 
 // ========================================
@@ -50,14 +50,14 @@ const elements = {
 async function fetchOdds() {
     try {
         const response = await fetch(`${CONFIG.API_BASE}/odds`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) throw new Error('Failed to fetch odds');
         const data = await response.json();
         state.races = data.events || [];
-        state.lastUpdate = new Date(data.timestamp);
-        return true;
+        state.lastUpdate = new Date();
+        return state.races;
     } catch (error) {
         console.error('Error fetching odds:', error);
-        return false;
+        return [];
     }
 }
 
@@ -67,13 +67,13 @@ async function fetchOdds() {
 async function fetchMarketMovers() {
     try {
         const response = await fetch(`${CONFIG.API_BASE}/market-movers`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) throw new Error('Failed to fetch movers');
         const data = await response.json();
         state.movers = data.movers || [];
-        return true;
+        return state.movers;
     } catch (error) {
-        console.error('Error fetching market movers:', error);
-        return false;
+        console.error('Error fetching movers:', error);
+        return [];
     }
 }
 
@@ -83,25 +83,14 @@ async function fetchMarketMovers() {
 async function fetchPredictions() {
     try {
         const response = await fetch(`${CONFIG.API_BASE}/predictions`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) throw new Error('Failed to fetch predictions');
         const data = await response.json();
         state.predictions = data.predictions || [];
-        return true;
+        return state.predictions;
     } catch (error) {
         console.error('Error fetching predictions:', error);
-        return false;
+        return [];
     }
-}
-
-/**
- * Fetch all data in parallel
- */
-async function fetchAllData() {
-    await Promise.all([
-        fetchOdds(),
-        fetchMarketMovers(),
-        fetchPredictions(),
-    ]);
 }
 
 // ========================================
@@ -111,174 +100,194 @@ async function fetchAllData() {
 /**
  * Render race cards to the grid
  */
-function renderRaceCards() {
-    const container = elements.racesGrid;
-    container.innerHTML = '';
-
-    // Filter races based on current filter
+function renderRaces() {
     const filteredRaces = filterRaces(state.races, state.currentFilter);
-
+    
     if (filteredRaces.length === 0) {
-        container.innerHTML = '<div class="loading-spinner">No races found</div>';
+        elements.racesGrid.innerHTML = '<div class="loading-spinner">No races found</div>';
         return;
     }
 
-    filteredRaces.forEach((race) => {
+    elements.racesGrid.innerHTML = '';
+    
+    filteredRaces.forEach(race => {
         const card = createRaceCard(race);
-        container.appendChild(card);
+        elements.racesGrid.appendChild(card);
     });
-
-    updateTimestamp();
 }
 
 /**
- * Create a race card element from template
+ * Create a race card element
  */
 function createRaceCard(race) {
     const template = elements.raceCardTemplate.content.cloneNode(true);
-    const card = template.querySelector('.race-card');
-
+    
     // Header
     template.querySelector('.race-name').textContent = race.race;
     template.querySelector('.track-badge').textContent = race.track;
-
-    // Featured badge
+    
     if (race.featured) {
         template.querySelector('.featured-badge').style.display = 'block';
     }
 
-    // Horse 1
-    const horse1Card = template.querySelector('.horse-1');
-    horse1Card.querySelector('.horse-name').textContent = race.horse1;
-    horse1Card.querySelector('.odds-value').textContent = race.odds1.toFixed(2);
-    horse1Card.querySelector('.place-value').textContent = (race.odds1 / 2).toFixed(2);
+    // Race details
+    template.querySelector('.distance').textContent = race.distance || 'N/A';
+    template.querySelector('.class').textContent = race.class || 'N/A';
+    template.querySelector('.prize').textContent = race.prize || 'N/A';
 
-    // Horse 2
-    const horse2Card = template.querySelector('.horse-2');
-    horse2Card.querySelector('.horse-name').textContent = race.horse2;
-    horse2Card.querySelector('.odds-value').textContent = race.odds2.toFixed(2);
-    horse2Card.querySelector('.place-value').textContent = (race.odds2 / 2).toFixed(2);
+    // Horses (show first 2)
+    const horses = race.horses || [];
+    if (horses.length >= 2) {
+        // First horse
+        template.querySelector('.horse-1 .horse-name').textContent = horses[0].name;
+        template.querySelector('.horse-1 .jockey').textContent = `Jockey: ${horses[0].jockey}`;
+        template.querySelector('.horse-1 .trainer').textContent = `Trainer: ${horses[0].trainer}`;
+        template.querySelector('.horse-1 .odds-value').textContent = horses[0].odds.toFixed(2);
+        template.querySelector('.horse-1 .place-value').textContent = horses[0].place_odds.toFixed(2);
 
-    // Trend
-    const trendIcon = template.querySelector('.trend-icon');
-    const trendValue = template.querySelector('.trend-value');
-    trendValue.textContent = race.trendValue;
-    trendValue.classList.add(race.trend);
+        // Second horse
+        template.querySelector('.horse-2 .horse-name').textContent = horses[1].name;
+        template.querySelector('.horse-2 .jockey').textContent = `Jockey: ${horses[1].jockey}`;
+        template.querySelector('.horse-2 .trainer').textContent = `Trainer: ${horses[1].trainer}`;
+        template.querySelector('.horse-2 .odds-value').textContent = horses[1].odds.toFixed(2);
+        template.querySelector('.horse-2 .place-value').textContent = horses[1].place_odds.toFixed(2);
 
-    if (race.trend === 'up') {
-        trendIcon.textContent = '📈';
-    } else if (race.trend === 'down') {
-        trendIcon.textContent = '📉';
-    } else {
-        trendIcon.textContent = '➡️';
+        // Trend
+        const trendIcon = template.querySelector('.trend-icon');
+        const trendValue = template.querySelector('.trend-value');
+        const trend = horses[0].trend;
+        
+        if (trend === 'up') {
+            trendIcon.textContent = '📈';
+            trendIcon.classList.add('up');
+        } else if (trend === 'down') {
+            trendIcon.textContent = '📉';
+            trendIcon.classList.add('down');
+        } else {
+            trendIcon.textContent = '➡️';
+        }
+        
+        trendValue.textContent = horses[0].trendValue;
     }
 
-    // Buttons
-    const betBtn = template.querySelector('.bet-btn');
-    const detailsBtn = template.querySelector('.details-btn');
-
-    betBtn.addEventListener('click', () => {
-        showNotification(`Bet placed on ${race.horse1} vs ${race.horse2}`);
+    // Event listeners
+    template.querySelector('.bet-btn').addEventListener('click', () => {
+        showBetSlip(race, horses[0]);
     });
 
-    detailsBtn.addEventListener('click', () => {
-        showNotification(`Details: ${race.race} at ${race.track}`);
+    template.querySelector('.details-btn').addEventListener('click', () => {
+        showRaceDetails(race);
     });
 
-    // Add animation
-    card.classList.add('fade-in');
-
-    return template;
+    const card = template.querySelector('.race-card');
+    return card;
 }
 
 /**
  * Render market movers
  */
 function renderMarketMovers() {
-    const container = elements.moversContainer;
-    container.innerHTML = '';
-
     if (state.movers.length === 0) {
-        container.innerHTML = '<div class="loading-spinner">No movers available</div>';
+        elements.moversContainer.innerHTML = '<div class="loading-spinner">No movers</div>';
         return;
     }
 
-    state.movers.forEach((mover) => {
+    elements.moversContainer.innerHTML = '';
+    
+    state.movers.forEach(mover => {
         const card = createMoverCard(mover);
-        container.appendChild(card);
+        elements.moversContainer.appendChild(card);
     });
 }
 
 /**
- * Create a market mover card element from template
+ * Create a market mover card
  */
 function createMoverCard(mover) {
     const template = elements.moverCardTemplate.content.cloneNode(true);
-
-    template.querySelector('.mover-rank').textContent = `#${mover.position}`;
+    
+    template.querySelector('.mover-rank').textContent = `#${mover.rank}`;
     template.querySelector('.mover-horse').textContent = mover.horse;
     template.querySelector('.mover-track').textContent = mover.track;
-    template.querySelector('.mover-odds').textContent = mover.currentOdds.toFixed(2);
-
+    
     const changeValue = template.querySelector('.change-value');
-    changeValue.textContent = mover.change;
+    changeValue.textContent = mover.movement;
     changeValue.classList.add(mover.direction);
-
+    
     const changeIcon = template.querySelector('.change-icon');
-    changeIcon.textContent = mover.direction === 'up' ? '▲' : '▼';
-
-    template.querySelector('.mover-card').classList.add('fade-in');
-
-    return template;
+    changeIcon.textContent = mover.direction === 'up' ? '📈' : '📉';
+    
+    template.querySelector('.mover-odds').textContent = mover.current_odds.toFixed(2);
+    
+    return template.querySelector('.mover-card');
 }
 
 /**
  * Render expert predictions
  */
 function renderPredictions() {
-    const container = elements.predictionsContainer;
-    container.innerHTML = '';
-
     if (state.predictions.length === 0) {
-        container.innerHTML = '<div class="loading-spinner">No predictions available</div>';
+        elements.predictionsContainer.innerHTML = '<div class="loading-spinner">No predictions</div>';
         return;
     }
 
-    state.predictions.forEach((prediction) => {
+    elements.predictionsContainer.innerHTML = '';
+    
+    state.predictions.forEach(prediction => {
         const card = createPredictionCard(prediction);
-        container.appendChild(card);
+        elements.predictionsContainer.appendChild(card);
     });
 }
 
 /**
- * Create a prediction card element from template
+ * Create a prediction card
  */
 function createPredictionCard(prediction) {
     const template = elements.predictionCardTemplate.content.cloneNode(true);
-
-    template.querySelector('.prediction-tip').textContent = prediction.tip;
+    
+    template.querySelector('.prediction-tip').textContent = `${prediction.tip} - ${prediction.horse}`;
+    template.querySelector('.confidence-badge').textContent = `${prediction.confidence}% Confidence`;
     template.querySelector('.prediction-track').textContent = prediction.track;
-    template.querySelector('.prediction-reason').textContent = prediction.reason;
+    template.querySelector('.prediction-reason').textContent = prediction.analysis;
+    
+    return template.querySelector('.prediction-card');
+}
 
-    const confidenceBadge = template.querySelector('.confidence-badge');
-    confidenceBadge.textContent = `${prediction.confidence}%`;
+// ========================================
+// Filter Functions
+// ========================================
 
-    // Color code confidence
-    if (prediction.confidence >= 75) {
-        confidenceBadge.style.background = 'var(--success-color)';
-    } else if (prediction.confidence >= 60) {
-        confidenceBadge.style.background = 'var(--accent-teal)';
-    } else {
-        confidenceBadge.style.background = 'var(--warning-color)';
-    }
-
-    template.querySelector('.prediction-card').classList.add('fade-in');
-
-    return template;
+/**
+ * Filter races based on current filter
+ */
+function filterRaces(races, filter) {
+    if (filter === 'all') return races;
+    if (filter === 'featured') return races.filter(r => r.featured);
+    
+    // Filter by track (case-insensitive)
+    return races.filter(r => r.track.toLowerCase() === filter.toLowerCase());
 }
 
 /**
- * Update timestamp display
+ * Handle filter button clicks
+ */
+function setupFilterButtons() {
+    elements.filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            elements.filterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            state.currentFilter = btn.dataset.filter;
+            renderRaces();
+        });
+    });
+}
+
+// ========================================
+// UI Functions
+// ========================================
+
+/**
+ * Update last update timestamp
  */
 function updateTimestamp() {
     if (state.lastUpdate) {
@@ -289,79 +298,64 @@ function updateTimestamp() {
     }
 }
 
-// ========================================
-// Filtering Functions
-// ========================================
-
 /**
- * Filter races based on current filter
+ * Show bet slip modal
  */
-function filterRaces(races, filter) {
-    if (filter === 'all') return races;
-    if (filter === 'featured') return races.filter((r) => r.featured);
-
-    // Filter by track
-    const trackMap = {
-        randwick: 'Randwick',
-        'moonee-valley': 'Moonee Valley',
-        flemington: 'Flemington',
-        caulfield: 'Caulfield',
-    };
-
-    const trackName = trackMap[filter];
-    return races.filter((r) => r.track === trackName);
+function showBetSlip(race, horse) {
+    alert(`Bet placed on ${horse.name} in ${race.race}\n\nNote: This is a demo. Real betting integration coming soon!`);
 }
 
 /**
- * Handle filter button clicks
+ * Show race details modal
  */
-function setupFilterButtons() {
-    elements.filterButtons.forEach((btn) => {
-        btn.addEventListener('click', () => {
-            // Update active state
-            elements.filterButtons.forEach((b) => b.classList.remove('active'));
-            btn.classList.add('active');
+function showRaceDetails(race) {
+    const details = `
+Race: ${race.race}
+Track: ${race.track}
+Distance: ${race.distance}
+Class: ${race.class}
+Prize: ${race.prize}
+Going: ${race.going}
 
-            // Update filter and re-render
-            state.currentFilter = btn.dataset.filter;
-            renderRaceCards();
-        });
-    });
+Runners:
+${race.horses.map(h => `- ${h.name} (${h.odds.toFixed(2)})`).join('\n')}
+    `;
+    alert(details);
 }
 
 // ========================================
-// Utility Functions
+// Data Refresh
 // ========================================
 
 /**
- * Show notification (simple toast-like message)
+ * Refresh all data from API
  */
-function showNotification(message) {
-    // For now, just log and show in console
-    console.log('Notification:', message);
-    // In production, you might use a toast library or custom notification
-    alert(message);
+async function refreshData() {
+    try {
+        await Promise.all([
+            fetchOdds(),
+            fetchMarketMovers(),
+            fetchPredictions()
+        ]);
+        
+        renderRaces();
+        renderMarketMovers();
+        renderPredictions();
+        updateTimestamp();
+    } catch (error) {
+        console.error('Error refreshing data:', error);
+    }
 }
 
 /**
- * Initialize real-time updates
+ * Setup auto-refresh interval
  */
-function startAutoRefresh() {
-    // Refresh immediately
-    refreshAllData();
-
-    // Then refresh at intervals
-    setInterval(refreshAllData, CONFIG.REFRESH_INTERVAL);
-}
-
-/**
- * Refresh all data and re-render
- */
-async function refreshAllData() {
-    await fetchAllData();
-    renderRaceCards();
-    renderMarketMovers();
-    renderPredictions();
+function setupAutoRefresh() {
+    // Initial load
+    refreshData();
+    
+    // Refresh every 10 seconds
+    setInterval(refreshData, CONFIG.REFRESH_INTERVAL);
 }
 
 // ========================================
@@ -371,27 +365,12 @@ async function refreshAllData() {
 /**
  * Initialize the dashboard
  */
-async function init() {
-    console.log('Initializing Horse Racing Dashboard...');
-
-    // Setup filter buttons
+function init() {
     setupFilterButtons();
-
-    // Load initial data
-    await fetchAllData();
-
-    // Render all sections
-    renderRaceCards();
-    renderMarketMovers();
-    renderPredictions();
-
-    // Start auto-refresh
-    startAutoRefresh();
-
-    console.log('Dashboard initialized successfully');
+    setupAutoRefresh();
 }
 
-// Start the application when DOM is ready
+// Start the app when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
