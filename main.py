@@ -17,8 +17,14 @@ app = FastAPI(title="Horse Racing Dashboard API", version="4.0.0")
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Initialize OpenAI client
-client = OpenAI()
+# Initialize OpenAI client (optional - only if API key is available)
+try:
+    client = OpenAI()
+    ai_enabled = True
+except Exception as e:
+    print(f"Warning: OpenAI client not initialized: {e}")
+    client = None
+    ai_enabled = False
 
 # All Australian Racetracks with comprehensive race data
 AUSTRALIAN_TRACKS = {
@@ -280,6 +286,13 @@ PREDICTIONS = [
 
 def generate_ai_prediction(race_data: dict) -> dict:
     """Generate AI-powered prediction for a race using OpenAI"""
+    if not client or not ai_enabled:
+        return {
+            "analysis": "AI predictions are not available. Using sample data instead.",
+            "confidence": 0,
+            "model": "sample"
+        }
+    
     try:
         horses_info = "\n".join([
             f"- {h['name']}: Odds {h['odds']}, Jockey: {h['jockey']}, Trainer: {h['trainer']}, Form: {h['form']}, Trend: {h['trend']}"
@@ -344,6 +357,12 @@ Format as JSON with keys: top_pick, second_pick, confidence, analysis, bet_type"
 
 def generate_ai_insights(query: str) -> dict:
     """Generate AI insights for user queries about horse racing"""
+    if not client or not ai_enabled:
+        return {
+            "response": "AI insights are not available at this time. Please try again later.",
+            "model": "sample"
+        }
+    
     try:
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
@@ -519,7 +538,7 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "service": "Horse Racing Dashboard API",
         "version": "4.0",
-        "ai_enabled": True,
+        "ai_enabled": ai_enabled,
         "total_races": len(SAMPLE_RACES),
         "total_tracks": sum(len(tracks) for tracks in AUSTRALIAN_TRACKS.values())
     }
