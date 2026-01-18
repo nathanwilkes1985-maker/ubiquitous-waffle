@@ -6,6 +6,7 @@ Enhanced with all Australian racetracks, AI predictions, and Roughies Tips
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import json
 import os
@@ -13,6 +14,15 @@ import re
 from openai import OpenAI
 
 app = FastAPI(title="Horse Racing Dashboard API", version="4.0.0")
+
+# Add CORS middleware to allow cross-origin requests from documentation site
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
