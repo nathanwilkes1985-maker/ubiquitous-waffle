@@ -29,8 +29,15 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Initialize OpenAI client (optional - only if API key is available)
 try:
-    client = OpenAI()
-    ai_enabled = True
+    api_key = os.getenv('OPENAI_API_KEY')
+    if api_key:
+        client = OpenAI(api_key=api_key)
+        ai_enabled = True
+        print(f"OpenAI client initialized successfully")
+    else:
+        print("Warning: OPENAI_API_KEY environment variable not set")
+        client = None
+        ai_enabled = False
 except Exception as e:
     print(f"Warning: OpenAI client not initialized: {e}")
     client = None
