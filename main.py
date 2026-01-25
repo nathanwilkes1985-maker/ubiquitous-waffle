@@ -345,7 +345,7 @@ Provide:
 Format as JSON with keys: top_pick, second_pick, confidence, analysis, bet_type"""
 
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4-mini",
             messages=[
                 {
                     "role": "system",
@@ -392,7 +392,7 @@ def generate_ai_insights(query: str) -> dict:
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4-mini",
             messages=[
                 {
                     "role": "system",
